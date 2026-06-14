@@ -7,13 +7,18 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
+      - SCRAPLING_STEALTH=${SCRAPLING_STEALTH:-false}
+      - SCRAPLING_SOLVE_CLOUDFLARE=${SCRAPLING_SOLVE_CLOUDFLARE:-false}
+      - SCRAPLING_LOAD_DOM=${SCRAPLING_LOAD_DOM:-false}
+      - SCRAPLING_RETRIES=${SCRAPLING_RETRIES:-1}
+      - SCRAPLING_CONCURRENCY=${SCRAPLING_CONCURRENCY:-3}
       - ENGINE=${ENGINE:-chromium}
       - HOST=${HOST:-0.0.0.0}
       - PORT=${PORT:-8000}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health/liveness"]
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/health/readiness"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 90s
     restart: unless-stopped

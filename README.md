@@ -1,73 +1,49 @@
-# WaterCrawl Playwright Service
+# WaterCrawl Renderer Service (Scrapling)
 
-A FastAPI-based web service that uses Playwright to fetch and process web content. This service provides a robust API for web scraping with support for proxies, media blocking, and API key authentication.
+A FastAPI-based web service that uses [Scrapling](https://github.com/d4vinci/Scrapling) to fetch and process web content. It keeps the WaterCrawl `/html` API contract for drop-in use with [watercrawl](https://github.com/watercrawl/watercrawl).
 
 ## Features
 
-- 🚀 Fast and async web scraping using Playwright
-- 🔒 Optional API key authentication
-- 🌐 Proxy support
-- 🖼️ Media blocking capabilities
-- 🐳 Docker support
-- 🏗️ CI/CD with GitHub Actions
-- 📚 Interactive API documentation (Swagger UI)
+- Per-request Scrapling one-off rendering (`DynamicFetcher` / `StealthyFetcher`) with cookie isolation
+- Optional stealth mode and Cloudflare solving for anti-bot sites
+- Optional API key authentication
+- Proxy support (including WaterCrawl `username`/`password: null` payloads)
+- Media blocking, cookie-banner clicks, screenshot/PDF actions
+- Docker support and GHCR publishing
 
 ## Quick Start
 
 ### Using Docker Compose
 
-1. Clone the repository:
 ```bash
-git clone git@github.com:watercrawl/playwright.git
-cd playwright
-```
-
-2. Set up environment variables:
-```bash
+git clone https://github.com/hanakokoizumi/playwright-watercrawl.git
+cd playwright-watercrawl
 cp .env.example .env
-```
-
-3. Edit `.env` file with your settings:
-```env
-AUTH_API_KEY=your-secret-api-key
-PORT=8000
-HOST=0.0.0.0
-```
-
-4. Build and run with Docker Compose:
-```bash
 docker compose up --build
 ```
 
-The service will be available at `http://localhost:8000`
+The service listens on `http://localhost:8000`. API docs: `http://localhost:8000/docs`
 
-Access the interactive API documentation at `http://localhost:8000/docs`
-
-### Using Docker Hub Image
+### Using GHCR Image
 
 ```bash
-docker pull watercrawl/playwright:latest
-docker run -p 8000:8000 -e AUTH_API_KEY=your-secret-key watercrawl/playwright
+docker pull ghcr.io/hanakokoizumi/playwright-watercrawl:latest
+docker run -p 8000:8000 -e AUTH_API_KEY=your-secret-key ghcr.io/hanakokoizumi/playwright-watercrawl:latest
 ```
 
-## API Documentation
+On first use, set the GitHub package `playwright-watercrawl` to **public**, or authenticate with a PAT that has `read:packages`.
 
-The API documentation is available through Swagger UI at `/docs` endpoint. This provides:
-- Interactive API documentation
-- Request/response examples
-- Try-it-out functionality
-- OpenAPI specification
+## API
 
-### Available Endpoints
+### Health Checks
 
-#### Health Checks
-- GET `/health/liveness` - Liveness probe
-- GET `/health/readiness` - Readiness probe
+- `GET /health/liveness`
+- `GET /health/readiness`
 
-#### HTML Fetching
-- POST `/html` - Fetch HTML content from a URL
+### HTML Fetching
 
-#### Request Body
+- `POST /html`
+
 ```json
 {
   "url": "https://example.com",
@@ -79,17 +55,22 @@ The API documentation is available through Swagger UI at `/docs` endpoint. This 
     "password": "pass"
   },
   "block_media": true,
+  "wait_after_load": 1000,
+  "timeout": 15000,
   "user_agent": "custom-user-agent",
   "locale": "en-US",
+  "accept_cookies_selector": "#accept-cookies",
   "extra_headers": {
     "Custom-Header": "value"
-  }
+  },
+  "actions": [
+    {"type": "screenshot"},
+    {"type": "pdf"}
+  ]
 }
 ```
 
-## Authentication
-
-When `AUTH_API_KEY` is set in the environment, the API requires authentication using the `X-API-Key` header:
+Authentication (when `AUTH_API_KEY` is set):
 
 ```bash
 curl -X POST http://localhost:8000/html \
@@ -100,51 +81,50 @@ curl -X POST http://localhost:8000/html \
 
 ## Development
 
-### Local Setup
-
-1. Create a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Install Playwright browsers:
-```bash
-playwright install chromium
-```
-
-4. Run the application:
-```bash
+source venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+playwright install-deps chromium
+scrapling install
 uvicorn main:app --reload
+pytest -m "not integration"
+pytest -m integration
 ```
-
-5. Access the API documentation:
-   - Open `http://localhost:8000/docs` in your browser
-   - Try out the endpoints directly from the Swagger UI
-   - View the OpenAPI specification at `/openapi.json`
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| AUTH_API_KEY | API key for authentication | None (disabled) |
-| PORT | Server port | 8000 |
-| HOST | Server host | 0.0.0.0 |
-| PYTHONUNBUFFERED | Python unbuffered output | 1 |
+| `AUTH_API_KEY` | API key for authentication | None (disabled) |
+| `PORT` | Server port | `8000` |
+| `HOST` | Server host | `0.0.0.0` |
+| `SCRAPLING_STEALTH` | Use `StealthyFetcher` (`true`/`false`) | `false` |
+| `SCRAPLING_SOLVE_CLOUDFLARE` | Enable Cloudflare solving (stealth only) | `false` |
+| `SCRAPLING_LOAD_DOM` | Wait for extra DOM stability | `false` |
+| `SCRAPLING_RETRIES` | Scrapling fetch retries per request | `1` |
+| `SCRAPLING_CONCURRENCY` | Max concurrent browser fetches | `3` |
+| `ENGINE` | Deprecated; only `chromium` is supported | `chromium` |
+| `DEFAULT_PROXY` | Default proxy URI for all requests | None |
+| `PYTHONUNBUFFERED` | Python unbuffered output | `1` |
 
-## Contributing
+### WaterCrawl integration notes
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+- Set `PLAYWRIGHT_API_KEY` in WaterCrawl to match `AUTH_API_KEY` on this service.
+- When `SCRAPLING_STEALTH=true` and `SCRAPLING_SOLVE_CLOUDFLARE=true`, increase WaterCrawl `page_options.timeout` to at least `60000` ms. The WaterCrawl middleware uses `timeout/1000` as its httpx client timeout (default 15s), which is too short for Cloudflare challenges.
+- Replace the WaterCrawl compose image with `ghcr.io/hanakokoizumi/playwright-watercrawl:2.0.0` after publishing.
+
+## Publishing
+
+Tag a release to build and push to GHCR:
+
+```bash
+git tag v2.0.0
+git push origin v2.0.0
+```
+
+Image: `ghcr.io/hanakokoizumi/playwright-watercrawl:<tag>`
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT — see [LICENSE](LICENSE).

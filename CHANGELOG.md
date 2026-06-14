@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-06-14
+
+### Changed
+- Replaced persistent Playwright/Scrapling sessions with per-request `DynamicFetcher` / `StealthyFetcher` one-off rendering
+- Default rendering mode is now dynamic (`SCRAPLING_STEALTH=false`)
+- Docker images are published to GitHub Container Registry (`ghcr.io/hanakokoizumi/playwright-watercrawl`)
+- Base image switched from `mcr.microsoft.com/playwright/python` to `python:3.12-slim-bookworm`
+- HTML is captured from `page.content()` with `html_content` fallback (fixes empty HTML bug)
+- Readiness healthcheck uses service configuration state instead of a persistent browser session
+
+### Added
+- `SCRAPLING_STEALTH`, `SCRAPLING_SOLVE_CLOUDFLARE`, `SCRAPLING_LOAD_DOM`, `SCRAPLING_RETRIES`, `SCRAPLING_CONCURRENCY` environment variables
+- Proxy model accepts WaterCrawl `username`/`password: null` payloads
+- Contract and integration tests (`pytest`)
+- GitHub Actions `test.yml` workflow
+
+### Fixed
+- Empty `html` responses caused by using Scrapling `response.text`
+- Cookie/storage leakage from shared persistent browser contexts
+- Proxy requests failing with `Browser not initialized for proxy rotation mode`
+- `attachments: null` breaking WaterCrawl middleware consumers
+
+### Removed
+- Firefox and WebKit engine support (`ENGINE` is deprecated; Chromium only)
+- Unused `hypercorn` dependency
+
+[2.0.0]: https://github.com/hanakokoizumi/playwright-watercrawl/releases/tag/v2.0.0
+
 ## [1.2.0] - 2025-05-01
 
 ### Added

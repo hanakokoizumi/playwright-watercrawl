@@ -22,6 +22,7 @@ wheels/
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 
@@ -33,6 +34,7 @@ ENV/
 
 # Logs
 *.log
+.pytest_cache/
 
 # Docker
 .docker/

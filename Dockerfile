@@ -1,22 +1,27 @@
-FROM mcr.microsoft.com/playwright/python:v1.51.0-jammy
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Copy and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+ENV PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Copy application code
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN mkdir -p /ms-playwright \
+    && pip install --no-cache-dir -r requirements.txt \
+    && playwright install-deps chromium \
+    && scrapling install
+
 COPY . .
 
-# Change ownership to the non-root user 'pwuser' provided by the base image
-RUN chown -R pwuser:pwuser /app
+RUN useradd --create-home --shell /bin/bash appuser \
+    && chown -R appuser:appuser /app /ms-playwright
+USER appuser
 
-# Switch to non-root user
-USER pwuser
-
-# Expose the application port
 EXPOSE 8000
 
-# Command to run the application
 CMD ["sh", "-c", "uvicorn main:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000}"]
