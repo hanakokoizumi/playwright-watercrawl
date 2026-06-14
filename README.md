@@ -9,7 +9,7 @@ A FastAPI-based web service that uses [Scrapling](https://github.com/d4vinci/Scr
 - Optional API key authentication
 - Proxy support (including WaterCrawl `username`/`password: null` payloads)
 - Media blocking, cookie-banner clicks, screenshot/PDF actions
-- Docker support and GHCR publishing
+- Docker image based on `ghcr.io/d4vinci/scrapling` (no redundant Chromium install layer)
 
 ## Quick Start
 
@@ -112,7 +112,7 @@ pytest -m integration
 
 - Set `PLAYWRIGHT_API_KEY` in WaterCrawl to match `AUTH_API_KEY` on this service.
 - When `SCRAPLING_STEALTH=true` and `SCRAPLING_SOLVE_CLOUDFLARE=true`, increase WaterCrawl `page_options.timeout` to at least `60000` ms. The WaterCrawl middleware uses `timeout/1000` as its httpx client timeout (default 15s), which is too short for Cloudflare challenges.
-- Replace the WaterCrawl compose image with `ghcr.io/hanakokoizumi/playwright-watercrawl:2.0.0` after publishing.
+- Replace the WaterCrawl compose image with `ghcr.io/hanakokoizumi/playwright-watercrawl:2.0.1` (or `latest`) after publishing.
 
 ## Publishing
 

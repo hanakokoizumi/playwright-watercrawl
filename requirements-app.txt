@@ -1,0 +1,4 @@
+# Runtime deps layered on ghcr.io/d4vinci/scrapling (scrapling[fetchers] already in base).
+fastapi==0.111.0
+python-dotenv==1.0.1
+uvicorn==0.30.1

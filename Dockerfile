@@ -1,27 +1,23 @@
-FROM python:3.12-slim-bookworm
+# Scrapling + Chromium browsers are preinstalled in the official image.
+ARG SCRAPLING_BASE_IMAGE=ghcr.io/d4vinci/scrapling:latest
+FROM ${SCRAPLING_BASE_IMAGE}
 
-WORKDIR /app
+WORKDIR /service
 
 ENV PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive \
-    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    PATH="/app/.venv/bin:${PATH}"
 
+USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN mkdir -p /ms-playwright \
-    && pip install --no-cache-dir -r requirements.txt \
-    && playwright install-deps chromium \
-    && scrapling install
+COPY requirements-app.txt .
+RUN uv pip install --python /app/.venv/bin/python --no-cache -r requirements-app.txt
 
 COPY . .
 
-RUN useradd --create-home --shell /bin/bash appuser \
-    && chown -R appuser:appuser /app /ms-playwright
-USER appuser
-
 EXPOSE 8000
 
+ENTRYPOINT []
 CMD ["sh", "-c", "uvicorn main:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000}"]

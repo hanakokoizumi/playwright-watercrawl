@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-06-14
+
+### Changed
+- Docker base image switched to `ghcr.io/d4vinci/scrapling:latest` (Scrapling 0.4.9 + Chromium preinstalled)
+- Removed redundant `playwright install-deps` / `scrapling install` build steps; app deps install via `requirements-app.txt` into the base venv
+
+[2.0.1]: https://github.com/hanakokoizumi/playwright-watercrawl/releases/tag/v2.0.1
+
 ## [2.0.0] - 2026-06-14
 
 ### Changed
